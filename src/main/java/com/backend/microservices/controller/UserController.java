@@ -3,12 +3,10 @@ package com.backend.microservices.controller;
 
 import com.backend.microservices.model.User;
 import com.backend.microservices.service.UserService;
+import com.backend.microservices.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
@@ -18,23 +16,36 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody User user){
-        User saveduser=userService.register(user);
-        return ResponseEntity.ok(saveduser);
+    public ResponseEntity<?> signup(@RequestBody User user) {
+        return ResponseEntity.ok(userService.register(user));
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers(){
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
-        Optional<User> loggedInUser =
+
+        Optional<User> loggedIn =
                 userService.login(user.getUsername(), user.getPassword());
 
-        if (loggedInUser.isPresent()) {
-            return ResponseEntity.ok("Login successful");
+        if (loggedIn.isPresent()) {
+            String token = jwtUtil.generateToken(user.getUsername());
+            return ResponseEntity.ok(token);
         }
 
-        return ResponseEntity.badRequest().body("Invalid username or password");
+        return ResponseEntity.badRequest().body("Invalid credentials");
     }
+
+    @DeleteMapping("/user/{username}")
+    public ResponseEntity<?> deleteUser(@PathVariable String username) {
+        return ResponseEntity.ok(userService.deleteByUsername(username));
+    }
+
 }
